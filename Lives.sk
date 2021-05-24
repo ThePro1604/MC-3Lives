@@ -1,0 +1,155 @@
+on join:
+	if {toggle.lives} is true:
+		if {users::*} does not contain player:
+			add player to {users.::*}
+		if player hasn't played before:
+			set {lives.%player%} to 0
+			add 3 to {lives.%player%}
+			wait 2 seconds
+			message "&eYour lives have been set to 3."
+			set gamemode of player to Survival
+			set the health of the player to 10
+			stop
+		if {lives.%player%} is not set:
+			set {lives.%player%} to 0
+			add 3 to {lives.%player%}
+			wait 2 seconds
+			message "&eYour lives have been set to 3."
+			set gamemode of player to Survival
+			set the maximum health of the player to 10
+			stop
+		if {lives.%player%} = 0:
+			set gamemode of player to Spectator
+			stop
+
+on player respawn:
+	if {toggle.lives} is true:
+		if {lives.%player%} = 4:
+			set {lives.%player%} to 3
+			execute console command "scoreboard players set %player% Deaths 0"
+			message "&eYou have &4%{lives.%player%}% &emore lives remaining"
+			stop
+		if {lives.%player%} = 3:
+			set {lives.%player%} to 2
+			execute console command "scoreboard players set %player% Deaths 1"
+			message "&eYou have &4%{lives.%player%}% &emore lives remaining"
+			stop
+		if {lives.%player%} = 2:
+			set {lives.%player%} to 1
+			execute console command "scoreboard players set %player% Deaths 2"
+			message "&eYou have &4%{lives.%player%}% &emore lives remaining"
+			stop
+		if {lives.%player%} = 1:
+			set {lives.%player%} to 0
+			execute console command "scoreboard players set %player% Deaths 3"
+			message "&eYou have &4%{lives.%player%}% &elives left"
+			set gamemode of player to Spectator
+			stop
+
+on portal enter:
+	if {toggle.lives} is true:
+		if player is in world "world_the_end":
+			add 1 to {lives.%player%}
+
+command /lives [<OfflinePlayer>]:
+	description: Display how many lives the player has
+	aliases: /l, /life, /deaths, /death
+	trigger:
+		if {toggle.lives} is true:
+			if arg 1 is not set:
+				message "&eYou have <red>%{lives.%player%}%<reset> &elives."
+			else: 
+				message "&4%OfflinePlayer-argument% &ehas <red>%{lives.%OfflinePlayer-argument%}%<reset> &elives."
+		else:
+			message "&4Three Lives Is Not Enabled"
+
+command /resetdata [<player>] [<number>]:
+	description: reset all players data
+	aliases: /rd
+	permission: lives.admin
+	trigger:
+		if {toggle.lives} is true:
+			execute console command "scoreboard objectives remove Deaths"
+			execute console command "scoreboard objectives add Deaths deathCount"
+			execute console command "scoreboard objectives setdisplay list Deaths"
+			execute console command "scoreboard objectives setdisplay sidebar Deaths"
+			loop {users.::*}:
+				set {lives.%loop-value%} to 3
+			delete {users.::*}
+			set gamemode of all players to Survival
+		else:
+			message "&4Three Lives Is Not Enabled"
+
+command /givelives [<player>] [<number>]:
+	description: give live to player out of one own life count
+	aliases: /gl
+	trigger:
+		if {toggle.lives} is true:
+			if player != player-argument:
+				if {lives.%player-argument%} < 3:
+					if {lives.%player-argument%} + number-argument <= 3:
+						if {lives.%player%} < number-argument:
+							message "&eYou only have <red>%{lives.%player%}% &elives to give"
+							stop
+						set {_temp} to {lives.%player-argument%}
+						if {lives.%player%} - number-argument = 0:
+							set {lives.%player%} to {lives.%player%} - number-argument
+							set {lives.%player-argument%} to {lives.%player-argument%} + number-argument
+							execute console command "scoreboard players set %player% Deaths 3"
+							message "&eYou have &4%{lives.%player%}% &elives left"
+							set gamemode of player to Spectator
+							set {_death} to 3 - {lives.%player%}
+							set {_death2} to 3 - {lives.%player-argument%}
+							execute console command "scoreboard players set %player% Deaths %{_death}%"
+							execute console command "scoreboard players set %player-argument% Deaths %{_death2}%"
+							if {_temp} = 0:
+								set gamemode of player-argument to Survival
+								stop
+							else:
+								stop
+						execute console command "scoreboard players set %player% Deaths 3"
+						set {lives.%player%} to {lives.%player%} - number-argument
+						set {lives.%player-argument%} to {lives.%player-argument%} + number-argument
+						message "&eYou gave <red>%number-argument% &eto <red>%player-argument% &eyou have &4%{lives.%player%}% &elives left"
+						send "&eYou have recieved <red>%number-argument% &efrom <red>%player%" to player-argument
+						set {_death} to 3 - {lives.%player%}
+						set {_death2} to 3 - {lives.%player-argument%}
+						execute console command "scoreboard players set %player% Deaths %{_death}%"
+						execute console command "scoreboard players set %player-argument% Deaths %{_death2}%"
+						if {_temp} = 0:
+							set gamemode of player-argument to Survival
+							stop
+					else:
+						message "&eMax lives per player is &43&e, <red>%player-argument% &estill has &4%{lives.%player-argument%}% &elives remaining"
+				else:
+					message "<red>%player-argument% already have &43 lives"
+			else:
+				message "&eYou cant give lives to yourself"
+		else:
+			message "&4Three Lives Is Not Enabled"
+
+command /resetlives [<player>]:
+	description: Set a player's number of lives.
+	usage: /resetlives
+	permission: lives.admin
+	aliases: /rl
+	trigger:
+		if {toggle.lives} is true:
+			set {lives.%player%} to 3
+			message "&eSet <red>%player-argument%'s<reset> &elives to <red>%{lives.%player%}%"
+		else:
+			message "&4Three Lives Is Not Enabled"
+
+command /setlives [<OfflinePlayer>] [<number>]:
+	description: Set a player's number of lives.
+	usage: /setlives
+	permission: lives.admin
+	aliases: /sl
+	trigger:
+		if {toggle.lives} is true:
+			set {lives.%OfflinePlayer-argument%} to the number-argument
+			message "&eSet <red>%OfflinePlayer-argument%'s<reset> &elives to <red>%number-argument%"
+			set {_deaths} to 3 - number-argument
+			execute console command "scoreboard players set %OfflinePlayer-argument% Deaths %{_deaths}%"
+		else:
+			message "&4Three Lives Is Not Enabled"
